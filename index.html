@@ -1,0 +1,59 @@
+﻿<!-- index.html -->
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Crop Calendar</title>
+    <style>
+        .setting-item {
+            padding: 5px 5px 5px 10px;
+        }
+        .table-container {
+            margin-left: 10px;
+            overflow-x: auto;
+            overflow-y: auto;
+            height: auto;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #settings {
+            display: flex;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+<div id="settings">
+    <div class="setting-item">
+        <label for="speed-gro">激素类型</label>
+        <select id="speed-gro">
+            <option value="none">无</option>
+            <option value="basic">生长激素</option>
+            <option value="deluxe">高级生长激素</option>
+            <option value="hyper">顶级生长激素</option>
+        </select>
+    </div>
+
+    <div class="setting-item">
+        <input type="checkbox" id="agriculturist"/>
+        <label for="agriculturist">农业学家</label>
+    </div>
+
+    <div class="setting-item" style="display: none;" id="water-accelerate-setting">
+        <input type="checkbox" id="water-accelerate"/>
+        <label for="water-accelerate">临近水源</label>
+    </div>
+</div>
+
+<div id="body">
+    <div class="table-container">
+        <table class="wikitable roundedborder" style="text-align:center;" id="crop-table">
+            <tr>
+                <th colspan="7" id="title">我是标题</th>
+            </tr>
+        </table>
+    </div>
+</div>
+<script src="./dist/crop.js"></script>
+<script src="./dist/main.js"></script>
+</body>
+</html>
