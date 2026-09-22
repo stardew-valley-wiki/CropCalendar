@@ -118,7 +118,6 @@ class Crop implements ICrop
         {
             images.push(`${this.Eng} Stage ${i}.png`);
         }
-        images.push(`${this.Eng}.png`)
         return images;
     }
 }
@@ -178,6 +177,9 @@ const rawCropData: ICrop[] = [
 
     { Eng: "Summer Squash",  Stages: [1, 1, 1, 1, 2], RegrowTime: 3,  Name: "金皮西葫芦", },
     { Eng: "Broccoli",       Stages: [1, 2, 2, 3],    RegrowTime: 4,  Name: "西蓝花", },
+
+    { Eng: "Coffee Bean",    Stages: [1, 2, 2, 3, 2], RegrowTime: 2,  Name: "咖啡豆", },
+    { Eng: "Wild Seeds",     Stages: [3, 4],          RegrowTime: -1, Name: "野生种子", },
     { Eng: "Sweet Gem Berry", Stages: [2, 4, 6, 6, 6], RegrowTime: -1, Name: "宝石甜莓", }
 ];
 

@@ -68,10 +68,11 @@ function getAccelerate(): [number, string]
 
 /**
  * 获取图片 URL (带缓存)
- * @param fileName 文件名，例如 "Apple.png"
- * @param width 宽度，例如 48
+ * @param fileName 文件名，例如 "Pumpkin Stage 1.png"
+ * @param stage 要获取的图片是作物的哪个阶段
+ * @param width 宽度，默认 48
  */
-async function getImageUrl(fileName: string, width: number = 48): Promise<string>
+async function getImageUrl(fileName: string, stage: number, width: number = 48): Promise<string>
 {
     // 检查缓存，如果有直接返回
     if (cache.has(fileName))
@@ -79,7 +80,16 @@ async function getImageUrl(fileName: string, width: number = 48): Promise<string
         return cache.get(fileName)!;
     }
 
-    // 请求 API 获取图片信息
+    // 若没有，先从当前页面获取图片信息
+    const td = document.getElementById(`stage${stage}`);
+    const url = td?.querySelector('img')?.src ?? '';
+    if (url)
+    {
+        cache.set(fileName, url);
+        return url;
+    }
+
+    // 若还没有，则请求 API 获取图片信息
     try
     {
         const api = new mw.Api();
@@ -119,13 +129,13 @@ async function getImageUrl(fileName: string, width: number = 48): Promise<string
 /**
  * 获取表格 html
  */
-async function getTableHtml(fileName: string, width: number = 48): Promise<string>
+async function getTableHtml(fileName: string, stage: number, width: number = 48): Promise<string>
 {
     if (!fileName)
         return "";
 
     // 获取 URL
-    const url = await getImageUrl(fileName, width);
+    const url = await getImageUrl(fileName, stage, width);
 
     if (url)
     {
@@ -151,9 +161,9 @@ async function renderAll(): Promise<void>
         return;
 
     // 种子天数阶段 -1，先往 images 里塞一张种子阶段
-    let images: string[] = []
+    let images: [string, number][] = []
     stages[0] -= 1;
-    images.push(`${crop.Eng} Stage 1.png`)
+    images.push([`${crop.Eng} Stage 1.png`, 1])
 
     // 然后往 stages 的最后塞一张果实阶段
     stages.push(1)
@@ -177,22 +187,27 @@ async function renderAll(): Promise<void>
         }
     }
 
+    // 是否跨季节
+    const isCrossSeason = crop.Name === "玉米" || crop.Name === "咖啡豆";
+
     // 开始填充生长阶段
     let i = 0;
     let recycle = false;
-    while (images.length < 28)
+    let totalDay = isCrossSeason ? 56 : 28;
+    while (images.length < totalDay)
     {
         // 多次收获作物进入循环生长阶段
         if (recycle)
         {
             if (i < crop.RegrowTime)
             {
-                images.push(`${crop.Eng} Stage ${flattened_stages[flattened_stages.length - 2]}.png`);
+                let stage = crop.Stages.length + 2;
+                images.push([`${crop.Eng} Stage ${stage}.png`, stage]);
                 i++;
             }
             else
             {
-                images.push(`${crop.Eng}.png`);
+                images.push([`${crop.Eng}.png`, 99]);
                 i = 1;
             }
             continue;
@@ -203,7 +218,7 @@ async function renderAll(): Promise<void>
         const fullGrown = flattened_stages[index] === 99;
         if (fullGrown)
         {
-            images.push(`${crop.Eng}.png`);
+            images.push([`${crop.Eng}.png`, 99]);
             if (crop.RegrowTime > 0)
             {
                 recycle = true;
@@ -213,13 +228,14 @@ async function renderAll(): Promise<void>
         }
         else
         {
-            images.push(`${crop.Eng} Stage ${flattened_stages[index]}.png`);
+            let stage = flattened_stages[index];
+            images.push([`${crop.Eng} Stage ${stage}.png`, stage]);
         }
         i++;
     }
 
     // 填充表格
-    const el = document.getElementById('crop-table');
+    let el = document.getElementById('crop-table');
     if (!el) return;
     el.innerHTML = `
         <tr>
@@ -236,15 +252,25 @@ async function renderAll(): Promise<void>
         </tr>
     `
 
-    for (let week = 0; week < 4; week++)
+    let totalWeek = totalDay / 7;
+    for (let week = 0; week < totalWeek; week++)
     {
         let html = "<tr>";
         for (let day = 0; day < 7; day++)
         {
-            html += await getTableHtml(images[week * 7 + day]);
+            html += await getTableHtml(images[week * 7 + day][0], images[week * 7 + day][1]);
         }
         html += "</tr>";
-        el.innerHTML += html;
+        el.innerHTML += html
+
+        // 玉米或者咖啡豆
+        if (isCrossSeason && week === 3)
+        {
+            el = document.getElementById('crop-table-2');
+            if (!el) return;
+            el.style.removeProperty('display');
+            el.innerHTML = `<tr><th colspan="7" id="title">跨季节</th></tr>`
+        }
     }
 }
 
@@ -266,10 +292,18 @@ function main(): void
         return;
 
     // 先缓存图片
-    for (const image in crop.GetRelatedImages())
+    let stage = 1;
+    for (const image of crop.GetRelatedImages())
     {
-        getImageUrl(image).then();
+        getImageUrl(image, stage).then();
+        stage++;
     }
+    if (crop.RegrowTime > 0)
+    {
+        stage = crop.Stages.length + 2;
+        getImageUrl(`${crop.Eng} Stage ${stage}.png`, 9).then();
+    }
+    getImageUrl(`${crop.Eng}.png`, 99).then();
 
     // 如果是水稻或者芋头，显示临近水源选项
     if (crop.WaterAccelerate)
